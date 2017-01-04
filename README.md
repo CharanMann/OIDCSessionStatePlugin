@@ -1,11 +1,10 @@
 # OIDCSessionStatePlugin
 
 * Custom OpenAM Scope validator <br />
-* This plugin sets OpenAM session state in Token response "session_state" for OIDC Authorization Code and Implicit Grants flows <br />
-* For Resource Owner Password Credentials and Client Credentials Grant flows: this plugin sets "session_state" as DESTROYED as there is no OpenAM session for these flows. <br />   
+* This plugin sets OpenAM session state in Token response "session_state" for OIDC Authorization Code and Implicit Grants flows.
+* For Resource Owner Password Credentials and Client Credentials Grant flows: this plugin sets "session_state" as DESTROYED as there is no OpenAM session for these flows.   
 * There are 4 types of OpenAM session states: INVALID, VALID, INACTIVE, DESTROYED
 * Refer OpenID Connect Session Management spec: http://openid.net/specs/openid-connect-session-1_0.html#CreatingUpdatingSessions 
-
     
 Pre-requisites :
 ================
