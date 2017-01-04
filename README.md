@@ -1,11 +1,9 @@
 # OIDCSessionStatePlugin
 
 * Custom OpenAM Scope validator <br />
-* This plugin sets OpenAM session state in Token response session_state"  for OAuth Authorization Code and Implicit flows <br />
+* This plugin sets OpenAM session state in Token response "session_state"  for OAuth Authorization Code and Implicit flows <br />
 * Refer OAuth spec: http://openid.net/specs/openid-connect-session-1_0.html#CreatingUpdatingSessions 
 
-
-*Custom OpenAM Scope validator: This sets "session_state" in token response for OAuth Authorization Code and Implicit flows.*
 
 Pre-requisites :
 ================
@@ -17,7 +15,7 @@ OpenAM Configuration:
 =====================
 1. Build OIDCSessionStatePlugin by running 'mvn clean install'. This will build openam-oidc-session-state-1.0.0-SNAPSHOT.jar under /target directory.
 2. Stop OpenAM. 
-3. Copy openam-oidc-session-state-1.0.0-SNAPSHOT.jar to <OpenAM-TomcatHome>/webapps/ROOT/WEB-INF/lib
+3. Copy openam-oidc-session-state-1.0.0-SNAPSHOT.jar to (OpenAM-TomcatHome)/webapps/ROOT/WEB-INF/lib
 4. Restart OpenAM
 5. Specify "org.forgerock.openam.examples.OIDCSessionStateValidator" under Realms> (Specific realm)> Services> OAuth2 Provider> Scope Implementation Class
   
