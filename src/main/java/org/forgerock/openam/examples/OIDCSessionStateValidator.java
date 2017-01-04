@@ -34,10 +34,10 @@ import com.iplanet.dpro.session.SessionID;
 import com.iplanet.sso.SSOToken;
 import com.iplanet.sso.SSOTokenID;
 import com.sun.identity.shared.debug.Debug;
-import org.forgerock.oauth2.core.OAuth2ProviderSettingsFactory;
-import org.forgerock.oauth2.core.OAuth2Request;
-import org.forgerock.oauth2.core.ResourceOwnerSessionValidator;
-import org.forgerock.oauth2.core.Token;
+import org.forgerock.oauth2.core.*;
+import org.forgerock.oauth2.core.exceptions.InvalidClientException;
+import org.forgerock.oauth2.core.exceptions.NotFoundException;
+import org.forgerock.oauth2.core.exceptions.ServerException;
 import org.forgerock.openam.oauth2.IdentityManager;
 import org.forgerock.openam.oauth2.OpenAMScopeValidator;
 import org.forgerock.openam.scripting.ScriptEvaluator;
@@ -52,11 +52,9 @@ import org.forgerock.openidconnect.OpenIdConnectToken;
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
+import java.util.*;
 
+import static org.forgerock.openam.oauth2.OAuth2Constants.Params.OPENID;
 import static org.forgerock.openam.scripting.ScriptConstants.OIDC_CLAIMS_NAME;
 
 /**
@@ -102,6 +100,30 @@ public class OIDCSessionStateValidator extends OpenAMScopeValidator {
         this.sessionStateMap = Collections.unmodifiableMap(sessionSMap);
     }
 
+    @Override
+    public void additionalDataToReturnFromTokenEndpoint(AccessToken accessToken, OAuth2Request request) throws ServerException, InvalidClientException, NotFoundException {
+        super.additionalDataToReturnFromTokenEndpoint(accessToken, request);
+
+        final Set<String> scope = accessToken.getScope();
+        if (scope != null && scope.contains(OPENID)) {
+            SSOToken ssoToken = resourceOwnerSessionValidator.getResourceOwnerSession(request);
+
+            // In case no token is found
+            if (null == ssoToken) {
+                accessToken.addExtraData("session_state", sessionStateMap.get(SessionConstants.DESTROYED));
+            } else {
+                SSOTokenID ssoTokenID = ssoToken.getTokenID();
+                try {
+                    // Get the session from session cache; this session object has session state
+                    Session session = SessionCache.getInstance().getSession(new SessionID(ssoTokenID.toString()));
+                    accessToken.addExtraData("session_state", sessionStateMap.get(session.getState(false)));
+                } catch (SessionException e) {
+                    accessToken.addExtraData("session_state", sessionStateMap.get(SessionConstants.DESTROYED));
+                }
+            }
+
+        }
+    }
 
     /**
      * Sets "session_state" is token response, Note that this will only work for authorization code and implicit OAuth flows
@@ -117,13 +139,18 @@ public class OIDCSessionStateValidator extends OpenAMScopeValidator {
                 OpenIdConnectToken openIdConnectToken = (OpenIdConnectToken) token;
                 SSOToken ssoToken = resourceOwnerSessionValidator.getResourceOwnerSession(request);
 
-                SSOTokenID ssoTokenID = ssoToken.getTokenID();
-                try {
-                    // Get the session from session cache; this session object has session state
-                    Session session = SessionCache.getInstance().getSession(new SessionID(ssoTokenID.toString()));
-                    additionalData.put("session_state", sessionStateMap.get(session.getState(false)));
-                } catch (SessionException e) {
-                    e.printStackTrace();
+                // In case no token is found
+                if (null == ssoToken) {
+                    additionalData.put("session_state", sessionStateMap.get(SessionConstants.DESTROYED));
+                } else {
+                    SSOTokenID ssoTokenID = ssoToken.getTokenID();
+                    try {
+                        // Get the session from session cache; this session object has session state
+                        Session session = SessionCache.getInstance().getSession(new SessionID(ssoTokenID.toString()));
+                        additionalData.put("session_state", sessionStateMap.get(session.getState(false)));
+                    } catch (SessionException e) {
+                        additionalData.put("session_state", sessionStateMap.get(SessionConstants.DESTROYED));
+                    }
                 }
             }
         }
